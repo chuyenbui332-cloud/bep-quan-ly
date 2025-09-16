@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Nhập hàng</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>📦 Nhập hàng</h1>
+    <a href="index.html" class="btn btn-back">← Về trang chủ</a>
+
+    <!-- Form nhập hàng -->
+    <form id="nhaphang-form" class="form-grid">
+      <div>
+        <label>Tên nguyên liệu</label>
+        <input type="text" id="tennl" list="ds_nguyenlieu" required>
+        <datalist id="ds_nguyenlieu"></datalist>
+      </div>
+      <div>
+        <label>Số lượng</label>
+        <input type="number" step="0.01" id="soluong" required>
+      </div>
+      <div>
+        <label>Đơn vị</label>
+        <input type="text" id="donvi" readonly>
+      </div>
+      <div>
+        <label>Ngày nhập</label>
+        <input type="date" id="ngaynhap" required>
+      </div>
+      <input type="hidden" id="idnl">
+      <button type="submit" class="btn btn-green">➕ Nhập hàng</button>
+    </form>
+
+    <!-- Tìm kiếm nhập hàng -->
+    <h2 style="margin-top:30px;">🔎 Tìm kiếm nhập hàng</h2>
+    <form id="search-form" class="form-grid">
+      <div>
+        <label>Từ ngày</label>
+        <input type="date" id="from" required>
+      </div>
+      <div>
+        <label>Đến ngày</label>
+        <input type="date" id="to" required>
+      </div>
+      <button type="submit" class="btn btn-yellow">Tìm kiếm</button>
+    </form>
+
+    <!-- Kết quả -->
+    <table id="result-table">
+      <thead>
+        <tr>
+          <th>ID NL</th>
+          <th>Tên nguyên liệu</th>
+          <th>Số lượng</th>
+          <th>Đơn vị</th>
+          <th>Ngày nhập</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    let dsNguyenLieu = [];
+
+    // Load danh sách nguyên liệu
+    fetch("/api/nguyenlieu")
+      .then(res => res.json())
+      .then(data => {
+        dsNguyenLieu = data;
+        const datalist = document.getElementById("ds_nguyenlieu");
+        data.forEach(nl => {
+          const option = document.createElement("option");
+          option.value = nl.tennl;
+          datalist.appendChild(option);
+        });
+      });
+
+    // Khi chọn tên nguyên liệu → tự động điền ID và đơn vị
+    document.getElementById("tennl").addEventListener("input", e => {
+      const value = e.target.value;
+      const nl = dsNguyenLieu.find(item => item.tennl === value);
+      if (nl) {
+        document.getElementById("idnl").value = nl.idnl;
+        document.getElementById("donvi").value = nl.donvi;
+      } else {
+        document.getElementById("idnl").value = "";
+        document.getElementById("donvi").value = "";
+      }
+    });
+
+    // Gửi form nhập hàng
+    document.getElementById("nhaphang-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const data = {
+        idnl: document.getElementById("idnl").value,
+        tennl: document.getElementById("tennl").value,
+        soluong: document.getElementById("soluong").value,
+        donvi: document.getElementById("donvi").value,
+        ngaynhap: document.getElementById("ngaynhap").value
+      };
+
+      if (!data.idnl) {
+        alert("❌ Nguyên liệu không hợp lệ, vui lòng chọn từ danh sách");
+        return;
+      }
+
+      fetch("/api/nhaphang", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(msg => {
+        alert(msg.message || msg.error);
+        document.getElementById("nhaphang-form").reset();
+      });
+    });
+
+    // Tìm kiếm nhập hàng
+    document.getElementById("search-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const from = document.getElementById("from").value;
+      const to = document.getElementById("to").value;
+      fetch(`/api/nhaphang/search?from=${from}&to=${to}`)
+        .then(res => res.json())
+        .then(rows => {
+          const tbody = document.querySelector("#result-table tbody");
+          tbody.innerHTML = "";
+          rows.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${r.idnl}</td>
+              <td>${r.tennl}</td>
+              <td>${r.soluong}</td>
+              <td>${r.donvi}</td>
+              <td>${r.ngaynhap}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+    });
+  </script>
+</body>
+</html>

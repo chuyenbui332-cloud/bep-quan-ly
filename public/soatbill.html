@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quản lý Bill</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Nhập Bill</h1>
+    <a href="index.html" class="btn btn-back">← Về trang chủ</a>
+
+    <!-- Form nhập bill -->
+    <form id="form-bill">
+      <input type="date" id="ngaylap" required>
+
+      <input type="hidden" id="idmon">
+
+      <input type="text" id="tenmon" placeholder="Tên món..." list="suggestMonan" required>
+      <datalist id="suggestMonan"></datalist>
+
+      <input type="number" id="soluong" step="0.001" min="0" placeholder="Số lượng" required>
+
+      <button type="submit" class="btn btn-green">+ Thêm Bill</button>
+    </form>
+
+    <!-- Form tìm kiếm -->
+    <h1>Tìm kiếm Bill</h1>
+    <form id="search-form">
+      <input type="date" id="from" required>
+      <input type="date" id="to" required>
+      <button type="submit" class="btn btn-yellow">🔍 Tìm</button>
+    </form>
+
+    <!-- Bảng kết quả -->
+    <table>
+      <thead>
+        <tr>
+          <th>Ngày</th>
+          <th>Tên món</th>
+          <th>ID món</th>
+          <th>Số lượng</th>
+        </tr>
+      </thead>
+      <tbody id="billTable"></tbody>
+    </table>
+  </div>
+
+<script>
+  let monanMap = {}; // Map tên -> id
+
+  // Load danh sách món ăn cho autocomplete (sử dụng API /api/menu có sẵn)
+  async function loadMonan() {
+    try {
+      const res = await fetch("/api/menu");
+      const data = await res.json();
+      const datalist = document.getElementById("suggestMonan");
+      datalist.innerHTML = "";
+
+      data.forEach(m => {
+        // menu.js trả SELECT * FROM mon_an => id, ten, gia ...
+        monanMap[m.tenmon] = m.idmon;
+        const option = document.createElement("option");
+        option.value = m.tenmon;
+        datalist.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Lỗi tải món ăn:", err);
+    }
+  }
+  loadMonan();
+
+  // Khi nhập tên món -> cập nhật id ẩn
+  document.getElementById("tenmon").addEventListener("input", (e) => {
+    const ten = e.target.value;
+    document.getElementById("idmon").value = monanMap[ten] || "";
+  });
+
+  // Giữ ngày đã chọn trong localStorage
+  const ngayInput = document.getElementById("ngaylap");
+  if (localStorage.getItem("selectedDate")) {
+    ngayInput.value = localStorage.getItem("selectedDate");
+  }
+  ngayInput.addEventListener("change", () => {
+    localStorage.setItem("selectedDate", ngayInput.value);
+  });
+
+  // Submit form thêm bill
+  document.getElementById("form-bill").addEventListener("submit", async function(e){
+    e.preventDefault();
+    const ngaylap = document.getElementById("ngaylap").value;
+    const idMonan = document.getElementById("idmon").value;
+    const tenMonan = document.getElementById("tenmon").value;
+    const soluong = document.getElementById("soluong").value;
+
+    if (!idMonan) {
+      alert("Tên món không hợp lệ!");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/soatbill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idmon: idMonan, tenmon: tenMonan, soluong, ngaylap })
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        const row = `<tr>
+          <td>${ngaylap}</td>
+          <td>${tenmon}</td>
+          <td>${idmon}</td>
+          <td>${soluong}</td>
+        </tr>`;
+        document.getElementById("billTable").insertAdjacentHTML("beforeend", row);
+        this.reset();
+        document.getElementById("ngaylap").value = localStorage.getItem("selectedDate");
+      } else if (result.error) {
+        alert("Lỗi: " + result.error);
+      } else {
+        alert("Có lỗi xảy ra khi thêm bill!");
+      }
+    } catch (err) {
+      console.error("Fetch POST /api/soatbill error:", err);
+      alert("Không thể thêm bill!");
+    }
+  });
+
+ 
+// Tìm kiếm nhập bill
+    document.getElementById("search-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const from = document.getElementById("from").value;
+      const to = document.getElementById("to").value;
+      fetch(`/api/soatbill/search?from=${from}&to=${to}`)
+        .then(res => res.json())
+        .then(rows => {
+          console.log("Kết quả API /soatbill/search:", rows); // <-- Debug
+            const tbody = document.getElementById("billTable")
+          tbody.innerHTML = "";
+          rows.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${r.ngaylap}</td>
+              <td>${r.tenmon}</td>
+              <td>${r.idmon}</td>
+              <td>${r.soluong}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+    });
+
+</script>
+
+</body>
+</html>

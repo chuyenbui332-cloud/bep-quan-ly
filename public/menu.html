@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Menu - Quản lý bếp</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>📋 Quản lý Menu</h1>
+    <!-- Nút quay lại trang chủ -->
+      <a href="index.html" class="btn btn-back">← Về trang chủ</a>
+    </div>
+
+    <!-- Form thêm món -->
+    <form id="addForm">
+      <input type="text" id="tenmon" placeholder="Tên món" required>
+      <input type="number" id="giatien" placeholder="Giá bán (VNĐ)" required>
+      <button type="submit" class="btn btn-green">➕ Thêm món</button>
+    </form>
+
+    <!-- Bảng danh sách món ăn -->
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Tên món</th>
+          <th>Giá bán</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody id="menuTable">
+        <!-- Render từ JS -->
+      </tbody>
+    </table>
+
+  </div>
+
+  <script>
+    const API_URL = "/api/menu";
+
+    // Load danh sách món
+    async function loadMenu() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      const table = document.getElementById("menuTable");
+      table.innerHTML = "";
+      data.forEach(mon => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${mon.idmon}</td>
+          <td title="${mon.tenmon}">${mon.tenmon}</td>
+          <td>${Number(mon.giatien).toLocaleString()} đ</td>
+          <td>
+            <button class="btn btn-yellow" onclick="editMon(${mon.idmon}, '${mon.tenmon}', ${mon.giatien})">✏️ Sửa</button>
+            <button class="btn btn-red" onclick="deleteMon(${mon.idmon})">🗑️ Xóa</button>
+          </td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    // Thêm món
+    document.getElementById("addForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const tenmon = document.getElementById("tenmon").value;
+      const giatien = document.getElementById("giatien").value;
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenmon, giatien })
+      });
+      e.target.reset();
+      loadMenu();
+    });
+
+    // Sửa món
+    async function editMon(idmon, oldTenmon, oldGiatien) {
+      const tenmon = prompt("Nhập tên món:", oldTenmon);
+      const giatien = prompt("Nhập giá bán:", oldGiatien);
+      if (tenmon && giatien) {
+        await fetch(`${API_URL}/${idmon}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenmon, giatien })
+        });
+        loadMenu();
+      }
+    }
+
+    // Xóa món
+    async function deleteMon(idmon) {
+      if (confirm("Bạn có chắc muốn xóa món này?")) {
+        await fetch(`${API_URL}/${idmon}`, { method: "DELETE" });
+        loadMenu();
+      }
+    }
+
+    // Gọi ngay khi mở trang
+    loadMenu();
+  </script>
+</body>
+</html>

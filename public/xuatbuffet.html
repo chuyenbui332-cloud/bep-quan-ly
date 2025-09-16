@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Xuất Hàng Buffet</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Xuất Buffet</h1>
+    
+    <a href="index.html" class="btn btn-back">← Về trang chủ</a>
+
+    <!-- Form xuất buffet-->
+    <form id="buffet-form" class="form-grid">
+      <div>
+        <label>Tên nguyên liệu</label>
+        <input type="text" id="tennl" list="ds_nguyenlieu" required>
+        <datalist id="ds_nguyenlieu"></datalist>
+      </div>
+      <div>
+        <label>Số lượng</label>
+        <input type="number" step="0.01" id="soluong" required>
+      </div>
+      <div>
+        <label>Đơn vị</label>
+        <input type="text" id="donvi" readonly>
+      </div>
+      <div>
+        <label>Ngày xuất</label>
+        <input type="date" id="ngay" required>
+      </div>
+      <input type="hidden" id="idnl">
+      <button type="submit" class="btn btn-green">➕ Xuất hàng</button>
+    </form>
+
+    <!-- Tìm kiếm xuatbuffet -->
+    <h2 style="margin-top:30px;">🔎 Tìm kiếm xuất buffet</h2>
+    <form id="search-form" class="form-grid">
+      <div>
+        <label>Từ ngày</label>
+        <input type="date" id="from" required>
+      </div>
+      <div>
+        <label>Đến ngày</label>
+        <input type="date" id="to" required>
+      </div>
+      <button type="submit" class="btn btn-yellow">Tìm kiếm</button>
+    </form>
+
+<!-- Ô lọc theo tên nguyên liệu -->
+<div style="margin: 15px 0;">
+  <label>Lọc theo tên nguyên liệu:</label>
+  <input type="text" id="filter-ten" placeholder="Nhập tên nguyên liệu...">
+<datalist id="filter-ds"></datalist>
+</div>
+
+    <!-- Kết quả tìm kiếm -->
+    <table id="result-table">
+      <thead>
+        <tr>
+          <th>ID NL</th>
+          <th>Tên nguyên liệu</th>
+          <th>Số lượng</th>
+          <th>Đơn vị</th>
+          <th>Thành tiền</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    let dsNguyenLieu = [];
+
+    // Load danh sách nguyên liệu cho datalist
+    fetch("/api/nguyenlieu")
+      .then(res => res.json())
+      .then(data => {
+        dsNguyenLieu = data;
+        const datalist = document.getElementById("ds_nguyenlieu");
+        data.forEach(nl => {
+          const option = document.createElement("option");
+          option.value = nl.tennl;
+          datalist.appendChild(option);
+          
+        });
+      });
+
+    // Khi gõ tên nguyên liệu thì tự động lấy ID và đơn vị
+    document.getElementById("tennl").addEventListener("input", e => {
+      const value = e.target.value;
+      const nl = dsNguyenLieu.find(item => item.tennl === value);
+      if (nl) {
+        document.getElementById("idnl").value = nl.idnl;
+        document.getElementById("donvi").value = nl.donvi;
+      }
+    });
+
+    // Gửi form nhập hàng
+    document.getElementById("buffet-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const data = {
+        idnl: document.getElementById("idnl").value,
+        tennl: document.getElementById("tennl").value,
+        soluong: document.getElementById("soluong").value,
+        donvi: document.getElementById("donvi").value,
+        ngay: document.getElementById("ngay").value
+      };
+      fetch("/api/xuatbuffet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(res => res.json()).then(msg => {
+        alert(msg.message);
+        // reset thủ công các trường trừ ngày xuất
+document.getElementById("tennl").value = "";
+document.getElementById("idnl").value = "";
+document.getElementById("soluong").value = "";
+document.getElementById("donvi").value = "";
+      });
+    });
+
+    // Tìm kiếm nhập hàng
+    document.getElementById("search-form").addEventListener("submit", e => {
+      e.preventDefault();
+      const from = document.getElementById("from").value;
+      const to = document.getElementById("to").value;
+      fetch(`/api/xuatbuffet/search?from=${from}&to=${to}`)
+        .then(res => res.json())
+        .then(rows => {
+          const tbody = document.querySelector("#result-table tbody");
+          tbody.innerHTML = "";
+          rows.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${r.idnl}</td>
+              <td>${r.tennl}</td>
+              <td>${r.soluong}</td>
+              <td>${r.donvi}</td>
+              <td>${r.thanhtien}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        });
+    });
+
+// Lọc dữ liệu trong bảng theo tên nguyên liệu
+document.getElementById("filter-ten").addEventListener("input", e => {
+  const keyword = e.target.value.toLowerCase().trim();
+  const rows = document.querySelectorAll("#result-table tbody tr");
+
+  rows.forEach(row => {
+    const tennl = row.cells[1].innerText.toLowerCase(); // cột Tên nguyên liệu
+    row.style.display = tennl.includes(keyword) ? "" : "none";
+  });
+});
+
+
+
+  </script>
+</body>
+</html>

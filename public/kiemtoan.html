@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Kiểm Toán</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Kiểm Toán</h1>
+    <a href="index.html" class="btn btn-back">← Về trang chủ</a>
+
+    <!-- Ô lọc theo tên nguyên liệu -->
+    <div style="margin: 15px 0;">
+      <label>Lọc theo tên nguyên liệu:</label>
+      <input type="text" id="filter-ten" placeholder="Nhập tên nguyên liệu...">
+    </div>
+
+    <!-- Kết quả tìm kiếm -->
+    <table id="result-table">
+      <thead>
+        <tr>
+          <th>ID NL</th>
+          <th>Tên nguyên liệu</th>
+          <th>Đơn vị</th>
+          <th>Tổng Nhập</th>
+          <th>Tổng Xuất</th>
+          <th>Tồn Kho</th>
+          <th>Thực Tế</th>
+          <th>Chênh Lệch</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+ 
+</body>
+<script>
+// Gọi API lấy dữ liệu kiểm toán......
+async function loadKiemToan() {
+  try {
+    const res = await fetch("/api/kiemtoan");
+    const data = await res.json();
+    renderTable(data);
+  } catch (err) {
+    console.error("Lỗi load kiểm toán:", err);
+  }
+}
+
+// Render dữ liệu vào bảng ////
+function renderTable(data) {
+  const tbody = document.querySelector("#result-table tbody");
+  tbody.innerHTML = "";
+
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${row.idnl}</td>
+      <td>${row.tennl}</td>
+      <td>${row.donvi}</td>
+      <td>${row.nhap}</td>
+      <td>${row.xuat}</td>
+      <td class="ton-kho">${row.ton}</td>
+      <td><input type="number" class="thuc-te" placeholder="Nhập số"></td>
+      <td class="chenh-lech">0</td>
+    `;
+
+    // Lắng nghe thay đổi ở cột Thực Tế /////
+    const input = tr.querySelector(".thuc-te");
+    input.addEventListener("input", () => {
+      const tonKho = parseFloat(tr.querySelector(".ton-kho").textContent) || 0;
+      const thucTe = parseFloat(input.value) || 0;
+      const chenhLech = thucTe - tonKho;
+      tr.querySelector(".chenh-lech").textContent = chenhLech;
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+// Lọc theo tên nguyên liệu
+document.getElementById("filter-ten").addEventListener("input", e => {
+  const keyword = e.target.value.toLowerCase();
+  document.querySelectorAll("#result-table tbody tr").forEach(tr => {
+    const name = tr.children[1].textContent.toLowerCase();
+    tr.style.display = name.includes(keyword) ? "" : "none";
+  });
+});
+
+// Load ban đầu
+loadKiemToan();
+
+</script>
+</html>

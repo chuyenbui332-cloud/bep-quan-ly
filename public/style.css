@@ -1,0 +1,129 @@
+/* ===== Reset & font ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+body {
+  background-color: #f4f6f9;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* ===== Container chung ===== */
+.container {
+  width: 90%;
+  max-width: 1000px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #222;
+}
+
+/* ===== Form ===== */
+form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+form input {
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 180px;
+}
+form input:focus {
+  border-color: #007bff;
+}
+
+/* ===== Button ===== */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: white;
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn-green {
+  background-color: #28a745;
+}
+.btn-green:hover {
+  background-color: #218838;
+}
+.btn-yellow {
+  background-color: #ffc107;
+  color: #222;
+}
+.btn-yellow:hover {
+  background-color: #e0a800;
+}
+.btn-red {
+  background-color: #dc3545;
+}
+.btn-red:hover {
+  background-color: #c82333;
+}
+.btn-back {
+  background-color: #17a2b8;
+}
+.btn-back:hover {
+  background-color: #117a8b;
+}
+
+/* ===== Bảng ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+table th, table td {
+  padding: 12px 15px;
+  text-align: center;
+}
+table th {
+  background-color: #007bff;
+  color: white;
+  font-weight: 600;
+}
+table tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+table tr:hover {
+  background-color: #eef4ff;
+}
+
+/* Cột Tên món rộng hơn */
+table th:nth-child(2),
+table td:nth-child(2) {
+  text-align: left;
+  width: 50%;
+  max-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

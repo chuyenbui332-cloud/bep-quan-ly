@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Nguyên liệu - Quản lý bếp</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🥬 Quản lý Nguyên liệu</h1>
+      <a href="index.html" class="btn btn-back">← Về trang chủ</a>
+
+    <!-- Form thêm nguyên liệu -->
+    <form id="addForm">
+      <input type="text" id="tennl" placeholder="Tên nguyên liệu" required>
+      <input type="text" id="donvi" placeholder="Đơn vị (kg, lít, ...)" required>
+      <input type="number" id="gia" placeholder="Đơn giá (VNĐ)" required>
+      <button type="submit" class="btn btn-green">➕ Thêm nguyên liệu</button>
+    </form>
+
+    <!-- Bảng danh sách -->
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Tên nguyên liệu</th>
+          <th>Đơn vị</th>
+          <th>Đơn giá</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody id="nguyenlieuTable">
+        <!-- Render từ JS -->
+      </tbody>
+    </table>
+
+    <!-- Nút quay lại -->
+    <div style="text-align:center; margin-top:30px;">
+      <a href="index.html" class="btn btn-back">← Về trang chủ</a>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "/api/nguyenlieu";
+
+    // Load danh sách
+    async function loadNguyenLieu() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      const table = document.getElementById("nguyenlieuTable");
+      table.innerHTML = "";
+      data.forEach(nl => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${nl.idnl}</td>
+          <td title="${nl.tennl}">${nl.tennl}</td>
+          <td>${nl.donvi}</td>
+          <td>${Number(nl.gia).toLocaleString()} đ</td>
+          <td>
+            <button class="btn btn-yellow" onclick="editNL(${nl.idnl}, '${nl.tennl}', '${nl.donvi}', ${nl.gia})">✏️ Sửa</button>
+            <button class="btn btn-red" onclick="deleteNL(${nl.idnl})">🗑️ Xóa</button>
+          </td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    // Thêm
+    document.getElementById("addForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const tennl = document.getElementById("tennl").value;
+      const donvi = document.getElementById("donvi").value;
+      const gia = document.getElementById("gia").value;
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tennl, donvi, gia })
+      });
+      e.target.reset();
+      loadNguyenLieu();
+    });
+
+    // Sửa
+    async function editNL(idnl, oldTennl, oldDonvi, oldGia) {
+      const tennl = prompt("Tên nguyên liệu:", oldTennl);
+      const donvi = prompt("Đơn vị:", oldDonvi);
+      const gia = prompt("Đơn giá:", oldGia);
+      if (tennl && donvi && gia) {
+        await fetch(`${API_URL}/${idnl}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tennl, donvi, gia })
+        });
+        loadNguyenLieu();
+      }
+    }
+
+    // Xóa
+    async function deleteNL(idnl) {
+      if (confirm("Bạn có chắc muốn xóa nguyên liệu này?")) {
+        await fetch(`${API_URL}/${idnl}`, { method: "DELETE" });
+        loadNguyenLieu();
+      }
+    }
+
+    loadNguyenLieu();
+  </script>
+</body>
+</html>

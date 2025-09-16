@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>Công thức - Quản lý bếp</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* autocomplete small styles (position relative căn theo container) */
+    .autocomplete-suggestions { border:1px solid #ddd; background:#fff; position:absolute; z-index:1000; max-height:160px; overflow:auto; width:100%; }
+    .autocomplete-suggestions div { padding:8px; cursor:pointer; }
+    .autocomplete-suggestions div:hover { background:#f3f6ff; }
+    .field-row { position:relative; margin-bottom:12px; }
+    form#recipeForm, form#ingredientForm { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    form label { display:block; font-size:13px; color:#444; width:100%; }
+    input[type="text"], select, input[type="number"] { padding:8px 10px; border:1px solid #ccc; border-radius:6px; min-width:160px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📖 Quản lý Công thức</h1>
+    <a href="index.html" class="btn btn-back">← Về trang chủ</a>
+
+    <!-- Tìm món (autocomplete) -->
+    <div style="margin-top:18px;">
+      <label>Tìm/Tạo món (gõ để gợi ý)</label>
+      <div class="field-row" style="max-width:600px;">
+        <input type="text" id="tenmon" placeholder="Nhập tên món..." autocomplete="off">
+        <div id="mon_suggestions" class="autocomplete-suggestions" style="display:none;"></div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:10px">Công thức của: <strong id="mon_selected">—</strong></h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID NL</th>
+          <th>Nguyên liệu</th>
+          <th>Số lượng</th>
+          <th>Đơn vị</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody id="recipeTable">
+        <!-- render -->
+      </tbody>
+    </table>
+
+    <hr style="margin:20px 0">
+<h3>➕ Thêm nguyên liệu vào công thức (mỗi lần 1 nguyên liệu)</h3>
+<form id="ingredientForm" style="display:flex; flex-direction:column; gap:12px;">
+
+  <!-- Hidden -->
+  <input type="hidden" id="idmon">
+
+  <!-- Hàng nhập liệu -->
+  <div style="display:grid; grid-template-columns: 120px 1fr 150px 150px; gap:12px;">
+
+    <!-- ID (readonly, tự điền khi chọn NL) -->
+    <div>
+      <label>ID</label>
+      <input type="text" id="idnl" readonly placeholder="tự điền khi chọn nguyên liệu">
+    </div>
+
+    <!-- Tên nguyên liệu -->
+    <div>
+      <label>Nguyên liệu (gợi ý)</label>
+      <div class="field-row">
+        <input type="text" id="tennl" placeholder="Nhập tên nguyên liệu..." autocomplete="off">
+        <div id="nl_suggestions" class="autocomplete-suggestions" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Số lượng -->
+    <div>
+      <label>Số lượng</label>
+      <input type="number" id="soluong" step="0.01" placeholder="vd: 0.5" required>
+    </div>
+
+    <!-- Đơn vị (readonly, tự điền) -->
+    <div>
+      <label>Đơn vị</label>
+      <input type="text" id="donvi" readonly placeholder="tự điền khi chọn nguyên liệu">
+    </div>
+  </div>
+
+  <!-- Nút thêm -->
+  <div style="display:flex; justify-content:flex-end;">
+    <button class="btn btn-green" type="submit">➕ Thêm</button>
+  </div>
+</form>
+
+    
+  <script>
+    // danh sách từ server để gợi ý
+    let monList = [];
+    let nlList = [];
+
+    // helpers
+    function showSuggestions(list, container, inputEl, onSelect) {
+      container.innerHTML = '';
+      const v = inputEl.value.trim().toLowerCase();
+      if (!v) { container.style.display='none'; return; }
+      const matches = list.filter(it => (it.tenmon || it.tennl|| '').toLowerCase().includes(v)).slice(0, 20);
+      if (!matches.length) { container.style.display='none'; return; }
+      matches.forEach(item => {
+        const name = item.tenmon || item.tennl|| item.tenmon || '';
+        const div = document.createElement('div');
+        div.textContent = name;
+        div.addEventListener('click', () => {
+          onSelect(item);
+          container.style.display = 'none';
+        });
+        container.appendChild(div);
+      });
+      container.style.display = 'block';
+    }
+
+    // lấy dữ liệu món & nguyên liệu
+    async function loadStaticLists() {
+      const [mres, nlres] = await Promise.all([
+        fetch('/api/menu').then(r => r.json()),
+        fetch('/api/nguyenlieu').then(r => r.json())
+      ]);
+      // unify keys: menu returns {id, ten, gia}, nguyenlieu returns {id, ten, donvi}
+      monList = mres.map(m => ({ idmon: m.idmon, tenmon: m.tenmon }));
+      nlList = nlres.map(n => ({ idnl: n.idnl, tennl: n.tennl, donvi: n.donvi }));
+    }
+
+    // event setup
+    (async function init() {
+      await loadStaticLists();
+
+      const tenMon = document.getElementById('tenmon');
+      const monSug = document.getElementById('mon_suggestions');
+      tenMon.addEventListener('input', () => showSuggestions(monList, monSug, tenMon, item => {
+        tenMon.value = item.tenmon;
+        document.getElementById('idmon').value = item.idmon;
+        document.getElementById('mon_selected').textContent = item.tenmon;
+        loadRecipe(item.idmon);
+      }));
+
+      // click outside to hide suggestions
+      document.addEventListener('click', (e)=> {
+        if (!tenMon.contains(e.target) && !monSug.contains(e.target)) monSug.style.display='none';
+        const tenNl = document.getElementById('tennl'), nlSug = document.getElementById('nl_suggestions');
+        if (!tenNl.contains(e.target) && !nlSug.contains(e.target)) nlSug.style.display='none';
+      });
+
+      // nguyên liệu suggestions
+      const tenNl = document.getElementById('tennl');
+      const nlSug = document.getElementById('nl_suggestions');
+      tenNl.addEventListener('input', () => showSuggestions(nlList, nlSug, tenNl, item => {
+        tenNl.value = item.tennl;
+        document.getElementById('idnl') && (document.getElementById('idnl').value = item.idnl);
+        document.getElementById('donvi').value = item.donvi || '';
+      }));
+
+      // submit thêm nguyên liệu
+      document.getElementById('ingredientForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const idmon = document.getElementById('idmon').value;
+        const tenmon = document.getElementById('tenmon').value;
+        if (!tenmon) return alert('Chọn hoặc nhập tên món trước khi thêm nguyên liệu.');
+        const tennl = document.getElementById('tennl').value.trim();
+        const ngIdEl = document.getElementById('idnl');
+        const idnl = ngIdEl ? ngIdEl.value : null;
+        const soluong = document.getElementById('soluong').value;
+        const donvi = document.getElementById('donvi').value;
+
+        // build body: prefer ids if có
+        const body = {
+          idmon: idmon || null,
+          tenmon: tenmon,
+          idnl: idnl || null,
+          tennl: tennl,
+          soluong: soluong,
+          donvi: donvi
+        };
+        console.log("Body gửi đi:", body);
+
+        const res = await fetch('/api/congthuc', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          return alert('Lỗi thêm: ' + res.status + ' ' + txt);
+        }
+        // refresh danh sách công thức hiện tại:
+        const mid = idmon || (await res.json()).idmon || null;
+        // nếu server trả row mới, dùng mon_id từ đó
+        loadRecipe(idmon || null);
+        // reset only ingredient fields
+        document.getElementById('tennl').value='';
+        document.getElementById('soluong').value='';
+        document.getElementById('donvi').value='';
+      document.getElementById('idnl').value='';
+      });
+    })();
+
+    // load công thức của 1 món (dùng mon_id)
+    async function loadRecipe(idmon) {
+  if (!idmon) {
+    document.getElementById('recipeTable').innerHTML = '';
+    return;
+  }
+  const res = await fetch(`/api/congthuc/tenmon/${encodeURIComponent(idmon)}`);
+  if (!res.ok) {
+    console.error('Không load được công thức', res.status);
+    return;
+  }
+  const rows = await res.json();
+  const tbody = document.getElementById('recipeTable');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.idnl}</td>
+      <td title="${r.tennl}">${r.tennl}</td>
+      <td>${r.soluong}</td>
+      <td>${r.donvi}</td>
+      <td>
+        <button class="btn btn-red" onclick="deleteRow(${r.idnl}, ${idmon})">🗑 Xóa</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+    // xóa dòng
+    async function deleteRow(idmon, idnl) {
+      if (!confirm('Xác nhận xoá nguyên liệu khỏi công thức?')) return;
+      const res = await fetch(`/api/congthuc/${idmon}/${idnl}`, { method:'DELETE' });
+      if (!res.ok) return alert('Xóa thất bại');
+      loadRecipe(idmon);
+    }
+  </script>
+</body>
+</html>
