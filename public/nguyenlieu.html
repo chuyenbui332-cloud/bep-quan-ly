@@ -18,6 +18,12 @@
       <button type="submit" class="btn btn-green">➕ Thêm nguyên liệu</button>
     </form>
 
+    <!-- Ô lọc ngay trên bảng -->
+    <div style="margin:12px 0;">
+      <label for="filterInput">🔎 Lọc theo tên nguyên liệu:</label>
+      <input type="text" id="filterInput" placeholder="Nhập tên nguyên liệu..." style="margin-left:8px;">
+    </div>
+
     <!-- Bảng danh sách -->
     <table>
       <thead>
@@ -63,6 +69,8 @@
         `;
         table.appendChild(row);
       });
+
+      applyFilter(); // giữ filter khi reload
     }
 
     // Thêm
@@ -102,6 +110,19 @@
         loadNguyenLieu();
       }
     }
+
+    // Hàm lọc
+    function applyFilter() {
+      const keyword = document.getElementById("filterInput").value.toLowerCase().trim();
+      const rows = document.querySelectorAll("#nguyenlieuTable tr");
+      rows.forEach(row => {
+        const text = row.cells[1]?.textContent.toLowerCase() || "";
+        row.style.display = keyword === "" || text.includes(keyword) ? "" : "none";
+      });
+    }
+
+    // Gắn sự kiện lọc
+    document.getElementById("filterInput").addEventListener("input", applyFilter);
 
     loadNguyenLieu();
   </script>
