@@ -104,6 +104,16 @@
 
     // Gọi ngay khi mở trang
     loadMenu();
+    // Lọc dữ liệu trong bảng theo tên nguyên liệu
+document.getElementById("filter-ten").addEventListener("input", e => {
+  const keyword = e.target.value.toLowerCase().trim();
+  const rows = document.querySelectorAll("#result-table tbody tr");
+
+  rows.forEach(row => {
+    const tennl = row.cells[1].innerText.toLowerCase(); // cột Tên nguyên liệu
+    row.style.display = tennl.includes(keyword) ? "" : "none";
+  });
+});
   </script>
 </body>
 </html>
