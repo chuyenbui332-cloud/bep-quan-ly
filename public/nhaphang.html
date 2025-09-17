@@ -46,7 +46,12 @@
       </div>
       <button type="submit" class="btn btn-yellow">Tìm kiếm</button>
     </form>
-
+ <!-- Ô lọc (mình chỉ thêm đoạn này) -->
+    <div style="margin-top:12px;">
+      <label for="filterInput">🔎 Lọc theo tên nguyên liệu:</label>
+      <input type="text" id="filterInput" placeholder="Nhập tên nguyên liệu..." style="margin-left:8px;">
+    </div>
+    
     <!-- Kết quả -->
     <table id="result-table">
       <thead>
@@ -60,6 +65,8 @@
       </thead>
       <tbody></tbody>
     </table>
+
+   
   </div>
 
   <script>
@@ -140,8 +147,23 @@
             `;
             tbody.appendChild(tr);
           });
+
+          applyFilter(); // áp dụng filter nếu có từ trước
         });
     });
+
+    // Hàm lọc theo tên nguyên liệu
+    function applyFilter() {
+      const keyword = document.getElementById("filterInput").value.toLowerCase().trim();
+      const rows = document.querySelectorAll("#result-table tbody tr");
+      rows.forEach(row => {
+        const text = row.cells[1]?.textContent.toLowerCase() || "";
+        row.style.display = keyword === "" || text.includes(keyword) ? "" : "none";
+      });
+    }
+
+    // Gắn sự kiện lọc
+    document.getElementById("filterInput").addEventListener("input", applyFilter);
   </script>
 </body>
 </html>
