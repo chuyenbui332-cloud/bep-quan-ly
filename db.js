@@ -11,6 +11,9 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  ssl: {
+    rejectUnauthorized: true // 👈 thêm SSL để Railway cho phép
+  }
 });
 
 // Kiểm tra DB khi server start
