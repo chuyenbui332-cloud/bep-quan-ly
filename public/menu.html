@@ -9,8 +9,7 @@
   <div class="container">
     <h1>📋 Quản lý Menu</h1>
     <!-- Nút quay lại trang chủ -->
-      <a href="index.html" class="btn btn-back">← Về trang chủ</a>
-    </div>
+    <a href="index.html" class="btn btn-back">← Về trang chủ</a>
 
     <!-- Form thêm món -->
     <form id="addForm">
@@ -18,13 +17,13 @@
       <input type="number" id="giatien" placeholder="Giá bán (VNĐ)" required>
       <button type="submit" class="btn btn-green">➕ Thêm món</button>
     </form>
-<!-- Ô lọc món ăn -->
-    <div style="margin-top: 15px;">
+
+    <!-- Ô lọc món ăn -->
+    <div style="margin:15px 0;">
       <label for="filterInput"><b>🔍 Lọc theo tên món:</b></label>
       <input type="text" id="filterInput" placeholder="Nhập tên món để tìm...">
     </div>
-  </div>
-  
+
     <!-- Bảng danh sách món ăn -->
     <table>
       <thead>
@@ -39,38 +38,49 @@
         <!-- Render từ JS -->
       </tbody>
     </table>
-
   </div>
 
   <script>
     const API_URL = "/api/menu";
+    let menuData = []; // lưu toàn bộ dữ liệu
 
     // Load danh sách món
     async function loadMenu() {
       const res = await fetch(API_URL);
-      const data = await res.json();
+      menuData = await res.json();
+      renderTable(menuData);
+    }
+
+    // Render bảng theo dữ liệu
+    function renderTable(data) {
       const table = document.getElementById("menuTable");
       table.innerHTML = "";
-      data.forEach(mon => {
+      if (data.length === 0) {
         const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${mon.idmon}</td>
-          <td title="${mon.tenmon}">${mon.tenmon}</td>
-          <td>${Number(mon.giatien).toLocaleString()} đ</td>
-          <td>
-            <button class="btn btn-yellow" onclick="editMon(${mon.idmon}, '${mon.tenmon}', ${mon.giatien})">✏️ Sửa</button>
-            <button class="btn btn-red" onclick="deleteMon(${mon.idmon})">🗑️ Xóa</button>
-          </td>
-        `;
+        row.innerHTML = `<td colspan="4" style="text-align:center; color:gray;">Không có dữ liệu</td>`;
         table.appendChild(row);
-      });
+      } else {
+        data.forEach(mon => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${mon.idmon}</td>
+            <td title="${mon.tenmon}">${mon.tenmon}</td>
+            <td>${Number(mon.giatien).toLocaleString()} đ</td>
+            <td>
+              <button class="btn btn-yellow" onclick="editMon(${mon.idmon}, '${mon.tenmon}', ${mon.giatien})">✏️ Sửa</button>
+              <button class="btn btn-red" onclick="deleteMon(${mon.idmon})">🗑️ Xóa</button>
+            </td>
+          `;
+          table.appendChild(row);
+        });
+      }
     }
 
     // Thêm món
     document.getElementById("addForm").addEventListener("submit", async e => {
       e.preventDefault();
       const tenmon = document.getElementById("tenmon").value;
-      const giatien = document.getElementById("giatien").value;
+      const giatien = Number(document.getElementById("giatien").value);
       await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -83,7 +93,7 @@
     // Sửa món
     async function editMon(idmon, oldTenmon, oldGiatien) {
       const tenmon = prompt("Nhập tên món:", oldTenmon);
-      const giatien = prompt("Nhập giá bán:", oldGiatien);
+      const giatien = Number(prompt("Nhập giá bán:", oldGiatien));
       if (tenmon && giatien) {
         await fetch(`${API_URL}/${idmon}`, {
           method: "PUT",
@@ -101,7 +111,8 @@
         loadMenu();
       }
     }
-// Lọc theo tên món
+
+    // Lọc theo tên món
     document.getElementById("filterInput").addEventListener("input", e => {
       const keyword = e.target.value.toLowerCase().trim();
       const filtered = menuData.filter(mon =>
@@ -109,9 +120,9 @@
       );
       renderTable(filtered);
     });
+
     // Gọi ngay khi mở trang
     loadMenu();
-   
   </script>
 </body>
 </html>
