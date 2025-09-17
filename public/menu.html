@@ -19,7 +19,6 @@
       <button type="submit" class="btn btn-green">➕ Thêm món</button>
     </form>
 
-  
     <!-- Bảng danh sách món ăn -->
     <table>
       <thead>
@@ -35,6 +34,12 @@
       </tbody>
     </table>
 
+    <!-- Ô lọc (chỉ thêm đoạn này) -->
+    <div style="margin-top:12px;">
+      <label for="filterInput">🔎 Lọc theo tên món:</label>
+      <input type="text" id="filterInput" placeholder="Nhập tên món để lọc..." style="margin-left:8px;">
+    </div>
+
   </div>
 
   <script>
@@ -48,7 +53,7 @@
       table.innerHTML = "";
       data.forEach(mon => {
         const row = document.createElement("tr");
-        row.innerHTML = 
+        row.innerHTML = `
           <td>${mon.idmon}</td>
           <td title="${mon.tenmon}">${mon.tenmon}</td>
           <td>${Number(mon.giatien).toLocaleString()} đ</td>
@@ -56,9 +61,11 @@
             <button class="btn btn-yellow" onclick="editMon(${mon.idmon}, '${mon.tenmon}', ${mon.giatien})">✏️ Sửa</button>
             <button class="btn btn-red" onclick="deleteMon(${mon.idmon})">🗑️ Xóa</button>
           </td>
-        ;
+        `;
         table.appendChild(row);
       });
+
+      applyFilter(); // áp dụng filter nếu có
     }
 
     // Thêm món
@@ -80,7 +87,7 @@
       const tenmon = prompt("Nhập tên món:", oldTenmon);
       const giatien = prompt("Nhập giá bán:", oldGiatien);
       if (tenmon && giatien) {
-        await fetch(${API_URL}/${idmon}, {
+        await fetch(`${API_URL}/${idmon}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ tenmon, giatien })
@@ -92,14 +99,26 @@
     // Xóa món
     async function deleteMon(idmon) {
       if (confirm("Bạn có chắc muốn xóa món này?")) {
-        await fetch(${API_URL}/${idmon}, { method: "DELETE" });
+        await fetch(`${API_URL}/${idmon}`, { method: "DELETE" });
         loadMenu();
       }
     }
 
+    // Hàm lọc
+    function applyFilter() {
+      const keyword = document.getElementById("filterInput").value.toLowerCase().trim();
+      const rows = document.querySelectorAll("#menuTable tr");
+      rows.forEach(row => {
+        const text = row.cells[1]?.textContent.toLowerCase() || "";
+        row.style.display = keyword === "" || text.includes(keyword) ? "" : "none";
+      });
+    }
+
+    // Gắn sự kiện cho ô lọc
+    document.getElementById("filterInput").addEventListener("input", applyFilter);
+
     // Gọi ngay khi mở trang
     loadMenu();
-   
   </script>
 </body>
 </html>
