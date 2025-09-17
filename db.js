@@ -12,7 +12,7 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   ssl: {
-    rejectUnauthorized: true // 👈 thêm SSL để Railway cho phép
+    rejectUnauthorized: false // 👈 thêm SSL để Railway cho phép
   }
 });
 
