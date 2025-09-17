@@ -18,7 +18,12 @@
       <input type="number" id="giatien" placeholder="Giá bán (VNĐ)" required>
       <button type="submit" class="btn btn-green">➕ Thêm món</button>
     </form>
-
+<!-- Ô lọc món ăn -->
+    <div style="margin-top: 15px;">
+      <label for="filterInput"><b>🔍 Lọc theo tên món:</b></label>
+      <input type="text" id="filterInput" placeholder="Nhập tên món để tìm...">
+    </div>
+  </div>
   
     <!-- Bảng danh sách món ăn -->
     <table>
@@ -96,7 +101,14 @@
         loadMenu();
       }
     }
-
+// Lọc theo tên món
+    document.getElementById("filterInput").addEventListener("input", e => {
+      const keyword = e.target.value.toLowerCase().trim();
+      const filtered = menuData.filter(mon =>
+        mon.tenmon.toLowerCase().includes(keyword)
+      );
+      renderTable(filtered);
+    });
     // Gọi ngay khi mở trang
     loadMenu();
    
